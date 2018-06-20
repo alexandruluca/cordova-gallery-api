@@ -1,5 +1,5 @@
 {
-  "name": "cordova-gallery-api",
+  "name": "com.subitolabs.android.cordova.galleryapi",
   "version": "1.0.1",
   "description": "LaunchBase Cordova Plugin",
   "cordova": {
