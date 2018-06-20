@@ -10,6 +10,9 @@
 
 @implementation GalleryAPI
 
+long photoCount, videoCount, totalVideoCount;
+BOOL isMediaShown;
+
 - (void) checkPermission:(CDVInvokedUrlCommand*)command {
     [self.commandDelegate runInBackground:^{
         __block NSDictionary *result;
@@ -58,6 +61,7 @@
         }
     }];
 }
+
 
 - (void)getAlbums:(CDVInvokedUrlCommand*)command
 {
@@ -109,9 +113,44 @@
     }];
 }
 
+
+-(PHAsset*)workAroundWhenAssetNotFound:(NSString*)localIdentifier{
+
+    __block PHAsset *result = nil;
+    PHFetchOptions *userAlbumsOptions = [PHFetchOptions new];
+    userAlbumsOptions.predicate = [NSPredicate predicateWithFormat:@"estimatedAssetCount > 0"];
+    PHFetchResult *userAlbums = [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum subtype:PHAssetCollectionSubtypeAlbumMyPhotoStream options:userAlbumsOptions];
+
+    if(!userAlbums || [userAlbums count] <= 0){
+
+        return nil;
+    }
+
+    [userAlbums enumerateObjectsUsingBlock:^(PHAssetCollection *collection, NSUInteger idx1, BOOL *stop) {
+        PHFetchOptions *fetchOptions = [PHFetchOptions new];
+        fetchOptions.predicate = [NSPredicate predicateWithFormat:@"self.localIdentifier CONTAINS %@",localIdentifier];
+        PHFetchResult *assetsFetchResult = [PHAsset fetchAssetsInAssetCollection:collection options:fetchOptions];
+
+        [assetsFetchResult enumerateObjectsUsingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop1) {
+            if(asset){
+                result = asset;
+                *stop1 = YES;
+                *stop = YES;
+            }
+        }];
+    }];
+    return result;
+}
+
+
 - (void)getMedia:(CDVInvokedUrlCommand*)command
 {
+    photoCount = 0;
+    videoCount = 0;
+    isMediaShown = FALSE;
+
     [self.commandDelegate runInBackground:^{
+
         NSDictionary* subtypes = [GalleryAPI subtypes];
         NSDictionary* album = [command argumentAtIndex:0];
         __block NSMutableArray* assets = [[NSMutableArray alloc] init];
@@ -124,12 +163,33 @@
                                                                                           options:nil];
 
         if (collections && collections.count > 0) {
+
+            PHFetchResult *allVideosResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeVideo options:nil];
+            totalVideoCount = allVideosResult.count;
+
             PHAssetCollection* collection = collections[0];
-            [[PHAsset fetchAssetsInAssetCollection:collection
-                                           options:nil] enumerateObjectsUsingBlock:^(PHAsset* obj, NSUInteger idx, BOOL* stop) {
-                if (obj.mediaType == PHAssetMediaTypeImage)
+            [[PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeVideo options:nil] enumerateObjectsUsingBlock:^(PHAsset* obj, NSUInteger idx, BOOL* stop) {
+
+                [[PHImageManager defaultManager] requestAVAssetForVideo:obj options:nil resultHandler:^(AVAsset *avAsset, AVAudioMix *audioMix, NSDictionary *info) {
+
+                    videoCount ++;
+
+                    NSURL *url = (NSURL *)[[(AVURLAsset*)avAsset URL] fileReferenceURL];
+
+                    NSString *videoUrl = [url relativePath];
+
+
+                    NSDateFormatter *objDateformat = [[NSDateFormatter alloc] init];
+                    [objDateformat setDateFormat:@"yyyy-MM-dd"];
+                    NSString    *strTime = [objDateformat stringFromDate:obj.creationDate];
+                    NSDate *objUTCDate  = [objDateformat dateFromString:strTime];
+                    long long milliseconds = (long long)([objUTCDate timeIntervalSince1970] * 1000.0);
+                    NSString *strTimeStamp = [NSString stringWithFormat:@"%lld",milliseconds];
+                    //                    NSLog(@"The Timestamp is = %@",strTimestamp);
+
                     [assets addObject:@{
                                         @"id" : obj.localIdentifier,
+                                        @"url": videoUrl ? videoUrl: @"",
                                         @"title" : @"",
                                         @"orientation" : @"up",
                                         @"lat" : @4,
@@ -138,20 +198,31 @@
                                         @"height" : [NSNumber numberWithFloat:obj.pixelHeight],
                                         @"size" : @0,
                                         @"data" : @"",
+                                        @"duration": [NSNumber numberWithFloat: obj.duration],
                                         @"thumbnail" : @"",
                                         @"error" : @"false",
-                                        @"type" : subtypes[@(collection.assetCollectionSubtype)]
+                                        @"type" : subtypes[@(collection.assetCollectionSubtype)],
+                                        @"date" : strTimeStamp
                                         }];
+
+                    if(assets.count == totalVideoCount && !isMediaShown) {
+
+                        isMediaShown = TRUE;
+
+                        NSSortDescriptor * dateDescriptor = [[NSSortDescriptor alloc] initWithKey:@"date" ascending:NO];
+                        NSArray * sortDescriptors = [NSArray arrayWithObject:dateDescriptor];
+                        NSArray * sortedArray = [assets sortedArrayUsingDescriptors:sortDescriptors];
+
+                        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:sortedArray];
+
+                        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+                    }
+                }];
             }];
         }
-
-        NSArray* reversedAssests = [[assets reverseObjectEnumerator] allObjects];
-
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:reversedAssests];
-
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
+
 
 - (void)getMediaThumbnail:(CDVInvokedUrlCommand*)command
 {
