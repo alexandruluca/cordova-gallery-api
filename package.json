@@ -1,0 +1,33 @@
+{
+  "name": "cordova-gallery-api",
+  "version": "0.2",
+  "description": "LaunchBase Cordova Plugin",
+  "cordova": {
+    "id": "com.subitolabs.android.cordova.galleryapi",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "keywords": [
+    "launchbase",
+    "cordova-android",
+    "cordova-ios"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=3.9.0"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexandruluca/cordova-gallery-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexandruluca/cordova-gallery-api/issues"
+  },
+  "homepage": "https://github.com/alexandruluca/cordova-gallery-api#readme"
+}
