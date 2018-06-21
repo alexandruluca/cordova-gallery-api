@@ -1,20 +1,3 @@
-Skip to content
-
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- @alexandruluca Sign out
-6
-0 0 TerriaMobile/kpmg-process-app Private
- Code  Issues 0  Pull requests 0  Projects 0  Wiki  Insights
-kpmg-process-app/client/plugins/com.subitolabs.android.cordova.galleryapi/src/ios/GalleryAPI.m
-dfece07  a day ago
-@ilsaha ilsaha fix for video library;
-
-565 lines (474 sloc)  33.4 KB
 #import <Cordova/CDV.h>
 
 #import "GalleryAPI.h"
