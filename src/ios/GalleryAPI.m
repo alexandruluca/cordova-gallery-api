@@ -1,3 +1,20 @@
+Skip to content
+
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ @alexandruluca Sign out
+6
+0 0 TerriaMobile/kpmg-process-app Private
+ Code  Issues 0  Pull requests 0  Projects 0  Wiki  Insights
+kpmg-process-app/client/plugins/com.subitolabs.android.cordova.galleryapi/src/ios/GalleryAPI.m
+dfece07  a day ago
+@ilsaha ilsaha fix for video library;
+
+565 lines (474 sloc)  33.4 KB
 #import <Cordova/CDV.h>
 
 #import "GalleryAPI.h"
@@ -178,14 +195,7 @@ BOOL isMediaShown;
 
                     NSString *videoUrl = [url relativePath];
 
-
-                    NSDateFormatter *objDateformat = [[NSDateFormatter alloc] init];
-                    [objDateformat setDateFormat:@"yyyy-MM-dd"];
-                    NSString    *strTime = [objDateformat stringFromDate:obj.creationDate];
-                    NSDate *objUTCDate  = [objDateformat dateFromString:strTime];
-                    long long milliseconds = (long long)([objUTCDate timeIntervalSince1970] * 1000.0);
-                    NSString *strTimeStamp = [NSString stringWithFormat:@"%lld",milliseconds];
-                    //                    NSLog(@"The Timestamp is = %@",strTimestamp);
+                    NSLog(@"VIDEO URL %ld %@", videoCount, videoUrl);
 
                     [assets addObject:@{
                                         @"id" : obj.localIdentifier,
@@ -201,19 +211,16 @@ BOOL isMediaShown;
                                         @"duration": [NSNumber numberWithFloat: obj.duration],
                                         @"thumbnail" : @"",
                                         @"error" : @"false",
-                                        @"type" : subtypes[@(collection.assetCollectionSubtype)],
-                                        @"date" : strTimeStamp
+                                        @"type" : subtypes[@(collection.assetCollectionSubtype)]
                                         }];
 
                     if(assets.count == totalVideoCount && !isMediaShown) {
 
                         isMediaShown = TRUE;
 
-                        NSSortDescriptor * dateDescriptor = [[NSSortDescriptor alloc] initWithKey:@"date" ascending:NO];
-                        NSArray * sortDescriptors = [NSArray arrayWithObject:dateDescriptor];
-                        NSArray * sortedArray = [assets sortedArrayUsingDescriptors:sortDescriptors];
+                        NSArray* reversedAssests = [[assets reverseObjectEnumerator] allObjects];
 
-                        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:sortedArray];
+                        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:reversedAssests];
 
                         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
                     }
